@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Structured Sentence Generator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #111;
+      color: #eee;
+      padding: 2rem;
+      text-align: center;
+    }
+    button {
+      margin-top: 1rem;
+      padding: 10px 20px;
+      font-size: 1.2rem;
+      cursor: pointer;
+    }
+    #output {
+      margin-top: 2rem;
+      font-size: 1.5rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>Smart Sentence Generator</h1>
+  <button onclick="generateSmartSentence()">Generate Sentence</button>
+  <div id="output"></div>
+
+  <script>
+    let words = [];
+
+    async function loadWords() {
+      const response = await fetch('words.txt');
+      const text = await response.text();
+      words = text.split('\n').map(w => w.trim().toLowerCase()).filter(Boolean);
+    }
+
+    async function getPartOfSpeech(word) {
+      try {
+        const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`);
+        const data = await res.json();
+        const meanings = data[0]?.meanings;
+        if (!meanings) return [];
+        return meanings.map(m => m.partOfSpeech);
+      } catch {
+        return [];
+      }
+    }
+
+    async function getWordOfType(posType) {
+      for (let i = 0; i < 50; i++) {
+        const word = words[Math.floor(Math.random() * words.length)];
+        const parts = await getPartOfSpeech(word);
+        if (parts.includes(posType)) return word;
+      }
+      return null;
+    }
+
+    async function generateSmartSentence() {
+      if (words.length === 0) await loadWords();
+
+      const article = "The";
+      const adj = await getWordOfType("adjective");
+      const noun = await getWordOfType("noun");
+      const verb = await getWordOfType("verb");
+      const adv = await getWordOfType("adverb");
+
+      const sentence = [article, adj, noun, verb, adv].filter(Boolean).join(" ") + ".";
+      const final = sentence.charAt(0).toUpperCase() + sentence.slice(1);
+      document.getElementById('output').textContent = final;
+    }
+
+    loadWords();
+  </script>
+</body>
+</html>
